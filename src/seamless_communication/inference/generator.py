@@ -131,6 +131,55 @@ class UnitYGenerator:
         assert model.text_decoder_frontend is not None
         assert model.final_proj is not None
 
+        beam_size = 5
+
+        # seq len == beam_size
+        # print(type(monotonic_decoder_model))
+        # text_decoder_frontend
+        input_names = ['seqs', 'start_step']
+        output_names = ['embeds']
+        x = (torch.tensor([[249416]]*beam_size,requires_grad=False).int(), torch.tensor([3], dtype=torch.int64, requires_grad=False))
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(model.text_decoder_frontend.cpu(), x, 'm4t_decoder_frontend_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+
+        """
+        # text_decoder
+        # seq len == beam size
+        input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
+        output_names = ['output_seqs']
+        # output_names = ['output_seqs', 'p_choose']
+        # dynamic_axes_1 = {
+        #     'input_seqs' : {1: 'seq_len'},
+        #     'encoder_output': {1: 'seq_len'},
+        #     'output_seqs' : {1: 'seq_len'},
+        #     'p_choose': {1: 'seq_len', 2: 'dim2'}
+
+        # }
+        x = [torch.randn([beam_size, 1, 1024],requires_grad=False).float(), torch.randn((1, 32),requires_grad=False).float(), torch.randn((beam_size, 73, 1024),requires_grad=False).float(), torch.randn((1, 73),requires_grad=False).float()]
+        for indx in range(48):
+            x.append(torch.randn((beam_size, 16, 32, 64),requires_grad=False).float())
+            if indx < 24:
+                input_names.append('layer_idx_{}_kcache'.format(indx))
+                output_names.append('layer_idx_{}_kcache'.format(indx))
+            else:
+                input_names.append('layer_idx_{}_vcache'.format(indx - 24))
+                output_names.append('layer_idx_{}_vcache'.format(indx - 24))
+
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(model.text_decoder.cpu(), tuple(x), 'm4t_decoder_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+        """
+        """
+        # step > 0 or step = 0
+        # seq len = beam_size
+        # print(type(monotonic_decoder_model.final_proj))
+        # text_decoder_frontend
+        input_names = ['input']
+        output_names = ['output']
+        x = (torch.randn(beam_size, 1, 1024,requires_grad=False).float())
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(model.final_proj.cpu(), x, 'm4t_decoder_final_proj_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        """
+
         s2t_model = UnitYX2TModel(
             encoder_frontend=model.speech_encoder_frontend,
             encoder=model.speech_encoder,

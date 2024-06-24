@@ -16,6 +16,7 @@ from fairseq2.nn.transformer import (
     CausalAttentionMaskFactory,
     create_standard_layer_norm,
 )
+from fairseq2.nn.transformer import RectAttentionMask
 from fairseq2.typing import DataType, Device, finaloverride
 from torch import Tensor
 from torch.nn import Module
@@ -66,28 +67,67 @@ class MonotonicTransformerDecoder(Module):
     def forward(
         self,
         seqs: Tensor,
-        padding_mask: Optional[PaddingMask],
+        # padding_mask: Optional[PaddingMask],
+        # padding_mask: Tensor,
+        # padding_mask_batch_seq_len:  Optional[int] = None,
+        # padding_mask_params:  Optional[list] = None,
+        self_attn_mask: Optional[Tensor] = None,
         encoder_output: Optional[Tensor] = None,
-        encoder_padding_mask: Optional[PaddingMask] = None,
-        *,
-        state_bag: Optional[IncrementalStateBag] = None,
+        # encoder_padding_mask: Optional[PaddingMask] = None,
+        # encoder_padding_mask: Optional[Tensor] = None,
+        # encoder_padding_mask_seq_len:  Optional[int] = None,
+        # encoder_padding_mask_params: Optional[list] = None,
+        # state_bag: Optional[IncrementalStateBag] = None,
+        cross_attn_mask: Optional[Tensor] = None,
+        *state_bag: Optional[list],
     ) -> Tuple[Tensor, Optional[PaddingMask], Tensor]:
+        # padding_mask_params = None
+        # encoder_padding_mask_params = None
+        """
+        if padding_mask_params is not None:
+            padding_mask = PaddingMask(*padding_mask_params)
+        else:
+            padding_mask = None
+        if encoder_padding_mask_params is not None:
+            encoder_padding_mask = PaddingMask(*encoder_padding_mask_params)
+        else:
+            encoder_padding_mask = None
+        """
+        padding_mask = None
+        encoder_padding_mask = None
+
+        # if state_bag is not None:
+        #     state_bag = IncrementalStateBag(*state_bag)
+        """
         self_attn_mask = self.self_attn_mask_factory(
             seqs, keys=seqs, training=self.training, state_bag=state_bag
         )
+        """
+        # for step > 1
+        self_attn_mask = RectAttentionMask(self_attn_mask)
+        cross_attn_mask = RectAttentionMask(cross_attn_mask)
 
         p_choose_list: List[Tensor] = []
 
+        layer_id = 0
+        new_state_bag = [None] * 48
+        if len(state_bag) == 0:
+            state_bag = [None] * 48
         for layer in self.layers.drop_iter():
-            seqs, padding_mask, p_choose = layer(
+            # if layer_id > 2:
+            #     break
+            seqs, padding_mask, p_choose, new_state_bag[layer_id], new_state_bag[24+layer_id] = layer(
                 seqs,
                 padding_mask,
                 self_attn_mask,
                 encoder_output,
+                cross_attn_mask,
                 encoder_padding_mask,
-                state_bag=state_bag,
+                state_bag[layer_id],
+                state_bag[24+layer_id],
             )
             p_choose_list.append(p_choose)
+            layer_id += 1
 
         seqs = self.layer_norm(seqs)
 
@@ -95,4 +135,11 @@ class MonotonicTransformerDecoder(Module):
 
         p_choose = p_choose.flatten(0, 1)
 
-        return seqs, padding_mask, p_choose
+        # return seqs, padding_mask, p_choose
+        """
+        if padding_mask is not None:
+            return seqs, [padding_mask.seq_lens, padding_mask.batch_seq_len, padding_mask.materialized], p_choose
+        else:
+            return seqs, None, p_choose
+        """
+        return seqs, p_choose, *new_state_bag

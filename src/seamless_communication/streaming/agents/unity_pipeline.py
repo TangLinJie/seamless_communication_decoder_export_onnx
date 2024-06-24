@@ -96,7 +96,8 @@ class UnitYPipelineMixin:
         if not torch.cuda.is_available() and "cuda" in args.device:
             raise ValueError("CUDA not available, use CPU.")
 
-        args.device = torch.device(args.device)
+        # args.device = torch.device(args.device)
+        args.device = torch.device('cpu')
         if (args.fp16 or args.dtype == "fp16") and args.device != torch.device("cpu"):
             args.dtype = torch.float16
         else:
@@ -128,8 +129,36 @@ class UnitYPipelineMixin:
         logger.info(
             f"Loading the UnitY model: {args.unity_model_name} on device={args.device}, dtype={args.dtype}"
         )
+        # print(asset_card)
         unity_model = load_unity_model(asset_card, device=args.device, dtype=args.dtype)
         unity_model.eval()
+        """
+        streaming_evaluate --task s2tt --data-file ./cvssc_ja/test.tsv --audio-root-dir ./cvssc_ja/test --output ./test --tgt-lang eng --dtype fp32 --device cpu
+        print(type(unity_model.speech_encoder_frontend))
+        # unity_model.text_decoder = text_tokenizer.create_decoder()
+
+        input_names = ['input_seqs']
+        output_names = ['output_seqs']
+        dynamic_axes_1 = {
+            'input_seqs' : {1: 'seq_len'},
+            'output_seqs' : {1: 'seq_len'},
+        }
+        x = (torch.zeros(1,50, 80,requires_grad=False))
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(unity_model.speech_encoder_frontend.cpu(), x, 'seamless_streaming_unity_speech_encoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12, dynamic_axes=dynamic_axes_1)
+        """
+        """
+        print(type(unity_model.speech_encoder))
+        input_names = ['input_seqs', 'seq_len']
+        output_names = ['output_seqs']
+        dynamic_axes_1 = {
+            'input_seqs' : {1: 'seq_len'},
+            'output_seqs' : {1: 'seq_len'}
+        }
+        x = (torch.randn(1,127, 1024,requires_grad=False), 127)
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(unity_model.speech_encoder.cpu(), x, 'seamless_streaming_unity_speech_encoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=13, dynamic_axes=dynamic_axes_1, do_constant_folding=False)
+        """
 
         monotonic_decoder_config = load_monotonic_decoder_config(
             args.monotonic_decoder_model_name
@@ -141,6 +170,85 @@ class UnitYPipelineMixin:
             args.monotonic_decoder_model_name, device=args.device, dtype=args.dtype
         )
         monotonic_decoder_model.eval()
+
+        """
+        # step > 0
+        print(type(monotonic_decoder_model))
+        # text_decoder_frontend
+        input_names = ['seqs', 'start_step']
+        output_names = ['embeds']
+        x = (torch.tensor([[249416]],requires_grad=False).int(), torch.tensor([3], dtype=torch.int64, requires_grad=False))
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(monotonic_decoder_model.text_decoder_frontend.cpu(), x, 'seamless_streaming_monotonic_decoder_text_decoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        """
+        """
+        # step = 0
+        print(type(monotonic_decoder_model))
+        # text_decoder_frontend
+        input_names = ['seqs', 'start_step']
+        output_names = ['embeds']
+        x = (torch.tensor([[3, 256042] + [0] * 62],requires_grad=False).int(), torch.tensor([0], dtype=torch.int64, requires_grad=False))
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(monotonic_decoder_model.text_decoder_frontend.cpu(), x, 'seamless_streaming_monotonic_decoder_text_decoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        """
+        """
+        # text_decoder
+        # step > 0
+        input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
+        output_names = ['output_seqs', 'p_choose']
+        # output_names = ['output_seqs', 'p_choose']
+        # dynamic_axes_1 = {
+        #     'input_seqs' : {1: 'seq_len'},
+        #     'encoder_output': {1: 'seq_len'},
+        #     'output_seqs' : {1: 'seq_len'},
+        #     'p_choose': {1: 'seq_len', 2: 'dim2'}
+
+        # }
+        x = [torch.randn([1, 1, 1024],requires_grad=False).float(), torch.randn((1, 64),requires_grad=False).float(), torch.randn((1, 11, 1024),requires_grad=False).float(), torch.randn((1, 11),requires_grad=False).float()]
+        for indx in range(48):
+            x.append(torch.randn((1, 16, 64, 64),requires_grad=False).float())
+            if indx < 24:
+                input_names.append('layer_idx_{}_kcache'.format(indx))
+                output_names.append('layer_idx_{}_kcache'.format(indx))
+            else:
+                input_names.append('layer_idx_{}_vcache'.format(indx - 24))
+                output_names.append('layer_idx_{}_vcache'.format(indx - 24))
+
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+        """
+
+        # step = 0
+        input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
+        output_names = ['output_seqs', 'p_choose']
+        # output_names = ['output_seqs', 'p_choose']
+        # dynamic_axes_1 = {
+        #     'input_seqs' : {1: 'seq_len'},
+        #     'encoder_output': {1: 'seq_len'},
+        #     'output_seqs' : {1: 'seq_len'},
+        #     'p_choose': {1: 'seq_len', 2: 'dim2'}
+
+        # }
+        x = [torch.randn([1, 64, 1024],requires_grad=False).float(), torch.randn((64, 64),requires_grad=False).float(), torch.randn((1, 11, 1024),requires_grad=False).float(), torch.randn((64, 11),requires_grad=False).float()]
+        for indx in range(48):
+            if indx < 24:
+                output_names.append('layer_idx_{}_kcache'.format(indx))
+            else:
+                output_names.append('layer_idx_{}_vcache'.format(indx - 24))
+
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+
+        """
+        # step > 0 or step = 0
+        print(type(monotonic_decoder_model.final_proj))
+        # text_decoder_frontend
+        input_names = ['input']
+        output_names = ['output']
+        x = (torch.randn(1, 1, 1024,requires_grad=False).float())
+        # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
+        torch.onnx.export(monotonic_decoder_model.final_proj.cpu(), x, 'seamless_streaming_monotonic_decoder_final_proj.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        """
 
         return {
             "unity_model": unity_model,
@@ -166,7 +274,7 @@ class UnitYAgentPipeline(UnitYPipelineMixin, AgentPipeline):  # type: ignore
                     **models_and_configs,
                 )
             )
-
+        print(module_list)
         super().__init__(module_list)
 
     def pop(self, states: Optional[List[Optional[AgentStates]]] = None) -> Segment:
