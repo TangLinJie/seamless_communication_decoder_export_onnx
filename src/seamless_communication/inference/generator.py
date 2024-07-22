@@ -140,9 +140,8 @@ class UnitYGenerator:
         output_names = ['embeds']
         x = (torch.tensor([[249416]]*beam_size,requires_grad=False).int(), torch.tensor([3], dtype=torch.int64, requires_grad=False))
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(model.text_decoder_frontend.cpu(), x, 'm4t_decoder_frontend_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        torch.onnx.export(model.text_decoder_frontend.cpu(), x, 'm4t_decoder_frontend_beam_size_s2t/m4t_decoder_frontend_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
 
-        """
         # text_decoder
         # seq len == beam size
         input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
@@ -166,9 +165,9 @@ class UnitYGenerator:
                 output_names.append('layer_idx_{}_vcache'.format(indx - 24))
 
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(model.text_decoder.cpu(), tuple(x), 'm4t_decoder_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
-        """
-        """
+        torch.onnx.export(model.text_decoder.cpu(), tuple(x), 'm4t_decoder_beam_size_s2t/m4t_decoder_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+
+
         # step > 0 or step = 0
         # seq len = beam_size
         # print(type(monotonic_decoder_model.final_proj))
@@ -177,8 +176,9 @@ class UnitYGenerator:
         output_names = ['output']
         x = (torch.randn(beam_size, 1, 1024,requires_grad=False).float())
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(model.final_proj.cpu(), x, 'm4t_decoder_final_proj_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
-        """
+        torch.onnx.export(model.final_proj.cpu(), x, 'm4t_decoder_final_proj_beam_size_s2t/m4t_decoder_final_proj_beam_size_s2t.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+        import sys
+        sys.exit(0)
 
         s2t_model = UnitYX2TModel(
             encoder_frontend=model.speech_encoder_frontend,
