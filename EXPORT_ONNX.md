@@ -2,8 +2,8 @@
 [Seamless官方仓库](https://github.com/facebookresearch/seamless_communication)未提供onnx导出脚本，本导出教程基于官方代码进行修改，导出的decoder onnx模型精度与官方pt模型一致。
 
 ## 1. 特性
-* 支持流式SeamlessStreaming(S2T任务)的onnx模型导出
-* 支持离线M4t(S2T任务)的onnx模型导出
+* 支持流式SeamlessStreaming(S2T任务)decoder的onnx模型导出
+* 支持离线M4t(S2T任务)decoder的onnx模型导出
 
 ## 2. 代码修改说明
 主要修改内容包括：
