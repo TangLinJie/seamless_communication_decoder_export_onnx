@@ -181,7 +181,7 @@ class UnitYPipelineMixin:
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
         torch.onnx.export(monotonic_decoder_model.text_decoder_frontend.cpu(), x, 'seamless_streaming_monotonic_decoder_text_decoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
         """
-        """
+
         # step = 0
         print(type(monotonic_decoder_model))
         # text_decoder_frontend
@@ -189,9 +189,8 @@ class UnitYPipelineMixin:
         output_names = ['embeds']
         x = (torch.tensor([[3, 256042] + [0] * 62],requires_grad=False).int(), torch.tensor([0], dtype=torch.int64, requires_grad=False))
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(monotonic_decoder_model.text_decoder_frontend.cpu(), x, 'seamless_streaming_monotonic_decoder_text_decoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
-        """
-        """
+        torch.onnx.export(monotonic_decoder_model.text_decoder_frontend.cpu(), x, 'seamless_streaming_monotonic_decoder_text_decoder_frontend/seamless_streaming_monotonic_decoder_text_decoder_frontend.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+
         # text_decoder
         # step > 0
         input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
@@ -215,8 +214,8 @@ class UnitYPipelineMixin:
                 output_names.append('layer_idx_{}_vcache'.format(indx - 24))
 
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
-        """
+        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder_step_bigger_1/seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+
 
         # step = 0
         input_names = ['input_seqs', 'self_attn_mask', 'encoder_output', 'cross_attn_mask']
@@ -237,9 +236,8 @@ class UnitYPipelineMixin:
                 output_names.append('layer_idx_{}_vcache'.format(indx - 24))
 
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
+        torch.onnx.export(monotonic_decoder_model.text_decoder.cpu(), tuple(x), 'seamless_streaming_monotonic_decoder_text_decoder_step_equal_1/seamless_streaming_monotonic_decoder_text_decoder.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=14)
 
-        """
         # step > 0 or step = 0
         print(type(monotonic_decoder_model.final_proj))
         # text_decoder_frontend
@@ -247,8 +245,10 @@ class UnitYPipelineMixin:
         output_names = ['output']
         x = (torch.randn(1, 1, 1024,requires_grad=False).float())
         # torch.save(monotonic_decoder_model.text_decoder_frontend.state_dict(), 'seamless_streaming_monotonic_decoder_text_decoder_frontend.pt')
-        torch.onnx.export(monotonic_decoder_model.final_proj.cpu(), x, 'seamless_streaming_monotonic_decoder_final_proj.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
-        """
+        torch.onnx.export(monotonic_decoder_model.final_proj.cpu(), x, 'seamless_streaming_monotonic_decoder_final_proj/seamless_streaming_monotonic_decoder_final_proj.onnx', input_names=input_names, output_names=output_names, verbose='True', opset_version=12)
+
+        import sys
+        sys.exit(0)
 
         return {
             "unity_model": unity_model,
