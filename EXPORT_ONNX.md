@@ -16,8 +16,8 @@
 * 代码不会进行推理，导出完成即退出
 
 ## 3. 安装和配置依赖环境
-SeamlessStreaming(S2T任务)decoder的onnx模型导出需要在x86主机上完成。
-为了导出Decoder模块，需要进行如下的环境准备
+decoder的onnx模型导出需要在x86主机上完成。
+为了导出decoder模块，需要进行如下的环境准备
 ```bash
 git clone https://github.com/TangLinJie/seamless_communication_decoder_export_onnx.git
 cd seamless_communication_decoder_export_onnx
